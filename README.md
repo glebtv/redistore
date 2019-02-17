@@ -1,27 +1,33 @@
 # redistore
 
-[![Build Status](https://drone.io/github.com/boj/redistore/status.png)](https://drone.io/github.com/boj/redistore/latest)
+[![Build Status](https://drone.io/github.com/glebtv/redistore/status.png)](https://drone.io/github.com/glebtv/redistore/latest)
 
 A session store backend for [gorilla/sessions](http://www.gorillatoolkit.org/pkg/sessions) - [src](https://github.com/gorilla/sessions).
 
 ## Requirements
 
-Depends on the [Redigo](https://github.com/garyburd/redigo) Redis library.
+Depends on the [go-redis](https://github.com/go-redis/redis) Redis library.
 
 ## Installation
 
-    go get gopkg.in/boj/redistore.v1
+    go get github.com/glebtv/redistore
 
 ## Documentation
 
-Available on [godoc.org](http://www.godoc.org/gopkg.in/boj/redistore.v1).
+Available on [godoc.org](http://www.godoc.org/github.com/glebtv/redistore).
 
 See http://www.gorillatoolkit.org/pkg/sessions for full documentation on underlying interface.
 
 ### Example
 ``` go
 // Fetch new store.
-store, err := NewRediStore(10, "tcp", ":6379", "", []byte("secret-key"))
+client := redis.NewClient(&redis.Options{
+  Addr:     "localhost:6379",
+  Password: "", // no password set
+  DB:       0,  // use default DB
+})
+
+store, err := NewRediStore(client, []byte("secret-key"))
 if err != nil {
 	panic(err)
 }
