@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-redis/redis"
 	"github.com/gorilla/sessions"
 )
 
@@ -86,10 +87,18 @@ func TestRediStore(t *testing.T) {
 	// Use of this source code is governed by a BSD-style
 	// license that can be found in the LICENSE file.
 
+	// Redis client
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
 	// Round 1 ----------------------------------------------------------------
 
 	// RedisStore
-	store, err := NewRediStore(10, "tcp", ":6379", "", []byte("secret-key"))
+
+	store, err := NewRediStore(client, []byte("secret-key"))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -166,7 +175,7 @@ func TestRediStore(t *testing.T) {
 	// Custom type
 
 	// RedisStore
-	store, err = NewRediStore(10, "tcp", ":6379", "", []byte("secret-key"))
+	store, err = NewRediStore(client, []byte("secret-key"))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -251,7 +260,7 @@ func TestRediStore(t *testing.T) {
 	// Round 6 ----------------------------------------------------------------
 	// RediStore change MaxLength of session
 
-	store, err = NewRediStore(10, "tcp", ":6379", "", []byte("secret-key"))
+	store, err = NewRediStore(client, []byte("secret-key"))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -277,7 +286,7 @@ func TestRediStore(t *testing.T) {
 	// Round 7 ----------------------------------------------------------------
 
 	// RedisStoreWithDB
-	store, err = NewRediStoreWithDB(10, "tcp", ":6379", "", "1", []byte("secret-key"))
+	store, err = NewRediStore(client, []byte("secret-key"))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -324,7 +333,7 @@ func TestRediStore(t *testing.T) {
 	// JSONSerializer
 
 	// RedisStore
-	store, err = NewRediStore(10, "tcp", ":6379", "", []byte("secret-key"))
+	store, err = NewRediStore(client, []byte("secret-key"))
 	store.SetSerializer(JSONSerializer{})
 	if err != nil {
 		t.Fatal(err.Error())
@@ -369,22 +378,40 @@ func TestRediStore(t *testing.T) {
 	}
 }
 
+func NewRedisStoreDefault(t *testing.T) *RediStore {
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	store, err := NewRediStore(client, []byte("secret-key"))
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+	return store
+}
+
 func TestPingGoodPort(t *testing.T) {
-	store, _ := NewRediStore(10, "tcp", ":6379", "", []byte("secret-key"))
+	store := NewRedisStoreDefault(t)
 	defer store.Close()
 	ok, err := store.ping()
 	if err != nil {
 		t.Error(err.Error())
 	}
-	if !ok {
+	if ok != "PONG" {
 		t.Error("Expected server to PONG")
 	}
 }
 
 func TestPingBadPort(t *testing.T) {
-	store, _ := NewRediStore(10, "tcp", ":6378", "", []byte("secret-key"))
-	defer store.Close()
-	_, err := store.ping()
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6378",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	_, err := NewRediStore(client, []byte("secret-key"))
 	if err == nil {
 		t.Error("Expected error")
 	}
@@ -392,7 +419,13 @@ func TestPingBadPort(t *testing.T) {
 
 func ExampleRediStore() {
 	// RedisStore
-	store, err := NewRediStore(10, "tcp", ":6379", "", []byte("secret-key"))
+	client := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	store, err := NewRediStore(client, []byte("secret-key"))
 	if err != nil {
 		panic(err)
 	}
